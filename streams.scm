@@ -96,22 +96,18 @@
 			   (integrate-series cosine-series))) 
 
 ; EX 3.60
-; this is not correct
+;dont think about the recursion too much it will explode your mind
 (define (mul-series s1 s2)
-		(cons-stream (* (scar s1) (scar s2))
-					 (add-streams
-					   (mul-series (scdr s1) s2)
-					   (mul-series s1 (scdr s2)))))
+		(let ((row (smap (lambda (x) (* x (scar s1)))
+						 s2)))
+		  (cons-stream (scar row) (add-streams (scdr row)
+											   (mul-series (scdr s1) s2)))))
 (define (sqr-series s)
 		(mul-series s s))
-(define magic-number
+(define should-be-one
 		(add-streams
 		  (sqr-series cosine-series)
 		  (sqr-series sine-series)))
-
-(define s (mul-series
-			(list->stream (list 5 2 0 0 0))
-			(list->stream (list 7 3 0 0 0))))
 
 
 
