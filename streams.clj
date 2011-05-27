@@ -144,5 +144,14 @@
 
 
 
-
-
+(define (mul-series s1 s2)
+		(let ((row (smap (lambda (x) (* x (scar s1)))
+						 s2)))
+		  (cons-stream (scar row) (add-streams (scdr row)
+											   (mul-series (scdr s1) s2)))))
+; EX 3.60
+(defn mul-series [s1 s2]
+  (let [row (map (fn [x] (* (first s1) x)) s2)]
+    (lazy-seq 
+      (cons (first row) (map + (rest row)
+                           (mul-series (rest s1) s2))))))
