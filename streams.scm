@@ -16,6 +16,12 @@
 	'()
 	(cons (scar s) (take (- n 1) (scdr s)))))
 
+; get all the elements from S
+(define (take-all s)
+  (if (stream-null? s)
+	'()
+	(cons (scar s) (take-all (scdr s)))))
+
 (define (list->stream lst)
   (if (null? lst)
 	'()
@@ -36,8 +42,10 @@
                  result)
            result)))) 
 
+; TODO check if any of the input streams are null 
+; not just the first one
 (define (smap proc . sx) 
-  (if (stream-null? (scar sx))
+  (if (stream-null? (car sx))
       the-empty-stream 
 	  (cons-stream (apply proc (map scar sx))
 				   (apply smap (cons proc (map scdr sx))))))
@@ -96,12 +104,17 @@
 			   (integrate-series cosine-series))) 
 
 ; EX 3.60
-;dont think about the recursion too much it will explode your mind
+; dont think about the recursion too much it will explode your mind
+; TODO make this work for finite series
+(define zeros
+  (cons-stream 0 zeros))
 (define (mul-series s1 s2)
-		(let ((row (smap (lambda (x) (* x (scar s1)))
-						 s2)))
-		  (cons-stream (scar row) (add-streams (scdr row)
-											   (mul-series (scdr s1) s2)))))
+  (if (stream-null? s1)
+	zeros
+	(let ((row (smap (lambda (x) (* x (scar s1)))
+					 s2)))
+	  (cons-stream (scar row) (add-streams (scdr row)
+										   (mul-series (scdr s1) s2))))))
 (define (sqr-series s)
 		(mul-series s s))
 (define should-be-one
@@ -109,9 +122,12 @@
 		  (sqr-series cosine-series)
 		  (sqr-series sine-series)))
 
-
-
-
-
+; EX 3.61
+(define (invert-unit-series s)
+  (letrec ((inv-series
+			 (cons-stream 1 (smap (lambda (x) (* x -1))
+								  (mul-series (scdr s) 
+											  inv-series)))))
+		   inv-series))
 
 
