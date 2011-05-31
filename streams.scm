@@ -130,4 +130,10 @@
 											  inv-series)))))
 		   inv-series))
 
-
+; EX 3.62
+;could use some fixin, but dont care now
+(define (div-series num denom)
+  (mul-series num 
+			  (invert-unit-series denom)))
+(define tan-series
+  (div-series sine-series cosine-series))
