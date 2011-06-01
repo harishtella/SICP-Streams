@@ -1,3 +1,7 @@
+; two kinds of infinite sequences
+; infinite seq from producer function - an iteration
+; infinite seq from implicit definition - recursive data
+
 
 ; lazy seqs defined in terms of a producer function
 

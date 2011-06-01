@@ -1,5 +1,3 @@
-; written in Scheme just to grok some concepts  
-; from the book
 
 (define (scar s) (car s))
 (define (scdr s) (force (cdr s)))
@@ -192,5 +190,131 @@
 				  (scale-stream i-s R)
 				  (scale-stream (integral i-s v0 dt) (/ 1 C)))))
 
+; EX 3.78
+(define (d-integral delayed-integrand initial-value dt) 
+		(define int 
+				(cons-stream initial-value 
+							 (let ((integrand (force delayed-integrand)))
+							   (add-streams (scale-stream integrand dt) 
+											int))))
+		int)
+
+(define (solve-2nd a b dt y0 dy0)
+  (define ys (d-integral (delay dys) y0 dt))
+  (define dys (d-integral 
+				(delay
+				  (add-streams
+					(scale-stream ys b)
+					(scale-stream dys a)))
+				dy0
+				dt))
+  ys)
+
+; EX 3.79
+(define (solve-2nd-gen f dt y0 dy0)
+  (define ys (d-integral (delay dys) y0 dt))
+  (define dys (d-integral 
+				(delay (smap f ys dys))
+				dy0
+				dt))
+  ys)
+
+; EX 3.80
+; cool
+(define (RLC R L C dt)
+  (lambda (vC0 iL0)
+	(define iLs (d-integral 
+				  (delay
+					(add-streams 
+					  (scale-stream iLs (* -1 (/ R L)))
+					  (scale-stream vCs (/ 1 L))))
+				  iL0 dt))
+	(define vCs (d-integral 
+				  (delay (scale-stream iLs (/ -1 C)))
+				  vC0 dt))
+	(cons vCs iLs)))
+;(define c (RLC 1 1 .2 .1))
+;(define c-out (c 10 0))
+;(apply map cons (map (lambda (x) (take 40 x)) (list (car c-out) (cdr c-out))))
 
 
+
+
+; EX 3.81
+; the iterative solution 
+(define rand-init 7)
+(define (rand-update x)
+  (let ((a 3) (b 6) (m 47))
+	(modulo (+ (* a x) 
+			   b)
+			m)))
+; helper function part
+(define (random-numbers-gen request-stream last-val) 
+  (if (stream-null? request-stream)
+	the-empty-stream
+	(let ((req (scar request-stream)))
+	  (cond ((eq? req 'generate) 
+			 (let ((nval (rand-update last-val)))
+			   (cons-stream nval
+							(random-numbers-gen (scdr request-stream) nval))))
+			((and (pair? req) (eq? (car req) 'reset))
+			 (let ((nval (cadr req)))
+			   (cons-stream nval
+							(random-numbers-gen (scdr request-stream) nval))))
+			(else the-empty-stream)))))
+
+(define (rand-gen request-stream)
+  (random-numbers-gen request-stream rand-init))
+
+(define rand-reqs
+  (list->stream '(generate generate (reset 8) generate generate (reset 9) (reset 7) 
+						   generate generate)))
+
+(define my-rands (rand-gen rand-reqs))
+;(take-all my-rands)
+
+
+; EX 3.81
+; the recursive solution
+(define (rand-gen-2 request-stream)
+  (define (proc-rand-req req last-val) 
+	(cond ((eq? req 'generate) (rand-update last-val))
+		  ((and (pair? req) (eq? (car req) 'reset)) (cadr req))
+		  (else '())))
+  (letrec ((rands (smap proc-rand-req 
+					  request-stream 
+					  (cons-stream rand-init rands))))
+	rands))
+(define my-rands (rand-gen-2 rand-reqs))
+;(take-all my-rands)
+
+; EX 3.82
+(define (random-in-range low high) 
+  (let ((range (- high low))) 
+    (+ low (random range)))) 
+(define (monte-carlo experiment-stream passed failed) 
+  (define (next passed failed) 
+    (cons-stream 
+     (/ passed (+ passed failed)) 
+     (monte-carlo 
+      (scdr experiment-stream) passed failed))) 
+  (if (scar experiment-stream) 
+      (next (+ passed 1) failed) 
+      (next passed (+ failed 1)))) 
+
+(define (estimate-integral P x1 x2 y1 y2)
+  (define (gen-test-point)
+	(cons (random-in-range x1 x2) (random-in-range y1 y2)))
+  (define (gen-test-points) 
+	(cons-stream (gen-test-point)
+				 (gen-test-points)))
+  (let ((experiment-results 
+		  (smap (lambda (x) (P (car x) (cdr x)))
+				(gen-test-points))))
+	(scale-stream (monte-carlo experiment-results 0 0)
+				  (* (- x2 x1) (- y2 y1)))))
+(define (test-fn x y)
+  (<= (+ (expt (- x 5) 2) 
+		 (expt (- y 7) 2))
+	  (expt 3 2)))
+;(take 100 (estimate-integral test-fn 2 8 4 10))
