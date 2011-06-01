@@ -111,6 +111,7 @@
 
 
 
+;--------
 (defn estim-sqrt [x]
   (iterate 
     (fn [g]  (-> (/ x g) 
@@ -119,8 +120,7 @@
                   (double)))
     1))
 
-;--------
-
+; EX 3.64
 (defn stream-limit [stream tolerance] 
   (letfn [(abs [x] (if (< x 0) (* -1 x) x))
           (sl-h [stream tolerance pos]
@@ -134,21 +134,20 @@
 
 (stream-limit (estim-sqrt 227) 0.001)
 
-;--------
-
+; EX 3.76
 (defn smooth [stream]
   (map (fn [x y] (/ (+ x y) 2)) stream (cons 0 stream)))
+(defn sign-change-detector [a b]
+  (cond (and (neg? a) (pos? b)) -1
+        (and (pos? a) (neg? b)) 1
+        :else 0))
+(defn zero-crossings [sense-data]
+  (let [smooth-sd (smooth sense-data)]
+    (map sign-change-detector smooth-sd (cons 0 smooth-sd)))) 
+(def x (list 0 10 -1 -10 1 7))
+(def z (zero-crossings x))
 
-(def x (list 0 10 20 30 100 1000))
-(take 5 (smooth x))
 
-
-
-(define (mul-series s1 s2)
-		(let ((row (smap (lambda (x) (* x (scar s1)))
-						 s2)))
-		  (cons-stream (scar row) (add-streams (scdr row)
-											   (mul-series (scdr s1) s2)))))
 ; EX 3.60
 (defn mul-series [s1 s2]
   (let [row (map (fn [x] (* (first s1) x)) s2)]

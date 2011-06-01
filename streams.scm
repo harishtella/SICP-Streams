@@ -131,9 +131,66 @@
 		   inv-series))
 
 ; EX 3.62
-;could use some fixin, but dont care now
+;could use some fixin, but good enough for now
 (define (div-series num denom)
   (mul-series num 
 			  (invert-unit-series denom)))
 (define tan-series
   (div-series sine-series cosine-series))
+
+;-----------------
+
+
+(define (interleave s1 s2)
+		(if (stream-null? s1) 
+		  s2 
+		  (cons-stream (scar s1) 
+					   (interleave s2 (scdr s1))))) 
+(define (pairs s t) 
+		(cons-stream 
+		  (list (scar s) (scar t)) 
+		  (interleave 
+			(smap (lambda (x) (list (scar s) x)) 
+				  (scdr t)) 
+			(pairs (scdr s) (scdr t)))))
+(define int-pairs (pairs integers integers))
+
+; EX 3.67
+(define (all-pairs s t) 
+		(cons-stream 
+		  (list (scar s) (scar t)) 
+		  (interleave 
+			(interleave
+			  (smap (lambda (x) (list (scar s) x)) 
+					(scdr t)) 
+			  (smap (lambda (x) (list x (scar t))) 
+					(scdr s)))
+			(pairs (scdr s) (scdr t)))))
+(define all-int-pairs (all-pairs integers integers))
+
+; EX 3.68
+(define (louis-pairs s t) 
+  (interleave 
+   (smap (lambda (x) (list (scar s) x)) 
+               t) 
+   (pairs (scdr s) (scdr t)))) 
+(define louis-ints (louis-pairs integers integers))
+;(take 10 int-pairs)
+;(take 10 louis-ints)
+
+; EX 3.73
+(define (integral integrand initial-value dt) 
+		(define int 
+				(cons-stream initial-value 
+							 (add-streams (scale-stream integrand dt) 
+										  int)))
+		int)
+
+(define (RC R C dt)
+		(lambda (i-s v0) 
+				(add-streams 
+				  (scale-stream i-s R)
+				  (scale-stream (integral i-s v0 dt) (/ 1 C)))))
+
+
+
