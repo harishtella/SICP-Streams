@@ -167,12 +167,13 @@
 (define all-int-pairs (all-pairs integers integers))
 
 ; EX 3.68
+; infinite loop
 (define (louis-pairs s t) 
   (interleave 
    (smap (lambda (x) (list (scar s) x)) 
                t) 
-   (pairs (scdr s) (scdr t)))) 
-(define louis-ints (louis-pairs integers integers))
+   (louis-pairs (scdr s) (scdr t)))) 
+;(define louis-ints (louis-pairs integers integers))
 ;(take 10 int-pairs)
 ;(take 10 louis-ints)
 
@@ -219,8 +220,18 @@
 				dt))
   ys)
 
-; EX 3.80
-; cool
+; EX 3.80 cool
+;
+; in MIT scheme I wouldn't have to use a delay in the vCs definition but in
+; Racket I do because it handles internal definitions like the example in SICP
+; EX 4.18, evaluating the definition value for vCs cant use the value of other
+; internal definitions.  (here that other definition is iLs) But after the
+; definitions are finished being processed they will be in the same environment
+; and will have access to each other by name. So the delayed call in vCs to iLs
+; will work. Perhaps I wouldn't have to use the delay in vCs if had I used
+; letrec, which I think would allow me use values of a previous binding (iLs) in
+; the evaluation of the value expression for vCs. 
+;
 (define (RLC R L C dt)
   (lambda (vC0 iL0)
 	(define iLs (d-integral 
@@ -285,6 +296,7 @@
 					  request-stream 
 					  (cons-stream rand-init rands))))
 	rands))
+
 (define my-rands (rand-gen-2 rand-reqs))
 ;(take-all my-rands)
 
@@ -292,6 +304,7 @@
 (define (random-in-range low high) 
   (let ((range (- high low))) 
     (+ low (random range)))) 
+
 (define (monte-carlo experiment-stream passed failed) 
   (define (next passed failed) 
     (cons-stream 
@@ -313,6 +326,7 @@
 				(gen-test-points))))
 	(scale-stream (monte-carlo experiment-results 0 0)
 				  (* (- x2 x1) (- y2 y1)))))
+
 (define (test-fn x y)
   (<= (+ (expt (- x 5) 2) 
 		 (expt (- y 7) 2))
